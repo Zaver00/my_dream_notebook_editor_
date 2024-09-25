@@ -1,0 +1,39 @@
+/* * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+}
+
+.container {
+    display: flex;
+    height: 100vh;
+}
+
+.sidebox {
+    width: 20%;
+    background-color: #f0f0f0;
+    padding: 10px;
+    overflow-y: auto;
+}
+
+.main-content {
+    width: 80%;
+    padding: 10px;
+}
+
+textarea {
+    width: 100%;
+    height: 500px;
+    resize: none;
+    padding: 10px;
+    font-size: 16px;
+}
+
+
+.w-md-editor-toolbar {
+    display: none;
+  } */
