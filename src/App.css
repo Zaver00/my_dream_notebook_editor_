@@ -92,3 +92,7 @@ blockquote {
   cursor: pointer;
   font-size: 20px;
 }
+
+li{
+  color: blueviolet;
+}

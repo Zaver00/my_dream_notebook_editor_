@@ -5,7 +5,7 @@ import { open } from '@tauri-apps/api/dialog';
 function MarkdownEditor() {
   //Editor
   const [content, setContent] = useState("");
-  const [preview, setPreview] = useState("");
+  const [preview, setPreview] = useState<React.ReactNode>(null);
   const [isEditMode, setIsEditMode] = useState(true);
   //Folder
   const [files, setFiles] = useState<string[]>([]);
@@ -44,23 +44,8 @@ function MarkdownEditor() {
     }
   };
 
-  const handleLinkClick = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-    const target = event.target as HTMLAnchorElement;
-  
-    // Проверяем, что клик произошел по элементу <a> и ссылка ведет на файл в текущей папке
-    if (target.tagName === 'A' && target.href.includes(folderPath)) {
-      event.preventDefault(); // Отменяем стандартное поведение ссылки
-  
-      const fileName = target.href.split('/').pop()?.replace('.md', ''); // Получаем имя файла без расширения
-      const filePath = `${folderPath}/${fileName}.md`; // Полный путь к файлу
-  
-      // Открываем файл
-      openFile(filePath);
-    }
-  };
-
   // Function to convert markdown to HTML (simple example)
-  const convertMarkdownToHtml = (markdown: string) => {
+  const resds = (markdown: string) => {
     // Here you could use a more complex markdown to HTML converter
     return markdown
       .replace(/^### (.*$)/gim, "<h3>$1</h3>")
@@ -80,47 +65,99 @@ function MarkdownEditor() {
       
   };
 
-const Test = () => {
-  const text = "### Заголовок 1\nНекоторый текст\n# Заголовок 2\n**Текст под заголовком** asad as\n## Заголовок 3\nСледующий текст\n[[test|te/Collection.md]]";
-
-const parts = text.split("\n").filter(Boolean); // Разделяем по новой строке и убираем пустые элементы
-
-return (
-  <div>
-    {parts.map((part, index) => {
-      // Проверяем, является ли строка заголовком
-      const h3 = part.match(/^### (.*)$/);
-      const h2 = part.match(/^## (.*)$/);
-      const h1 = part.match(/^# (.*)$/);
-
-      const create_link =  part.match(/\[\[([^\|\]]+)(?:\|([^\]]+))?\]\]/gim);
-
-      if (h3) {
-        return <h3 key={index}>{h3[1].trim()}</h3>; // Возвращаем заголовок без "### "
-      }
-      if (h2) {
-        return <h2 key={index}>{h2[1].trim()}</h2>; // Возвращаем заголовок без "### "
-      } 
-
-      if (part.startsWith("# ")) {
-        return <h1 key={index}>{part.replace("# ", "").trim()}</h1>; // Возвращаем заголовок без "### "
-      } 
-      if (part.startsWith("**") && part.endsWith("**")) {
-        return <em key={index}>{part.replace(/\*\*(.*)\*\*/gim, "").trim()}</em>; // Возвращаем заголовок без "### "
-      } 
-
-      if (create_link) {
-
-        return <button key={index} onClick={() => openFile(create_link[2] as string)}> { "ss" } </button>
-      }
-      return <p key={index}>{part.trim()}</p>; // Остальной текст в абзаце
-    })}
-  </div>
-);
+  const convertMarkdownToHtml = (text: string): React.ReactNode => {
+    const parts = text.split("\n").filter(Boolean); // Разделяем по новой строке и убираем пустые элементы
+  
+    const listItems: React.ReactNode[] = [];
+    let currentListType: 'ol' | 'ul' | null = null;
+  
+    return (
+      <div>
+        {parts.map((part, index) => {
+          // Проверяем, является ли строка заголовком
+          const h3 = part.match(/^### (.*)$/);
+          const h2 = part.match(/^## (.*)$/);
+          const h1 = part.match(/^# (.*)$/);
+          const bold = part.match(/\*\*(.*)\*\*/gim);
+          const quote = part.match(/^\> (.*$)/gim);
+          const cursiv = part.match(/\*(.*)\*/gim);
+          const list = part.match(/^\- (.*$)/gim);
+          const line = part.match(/^\___/gim);
+          const ollist = part.match(/^.\. (.*$)/gim);
+          const create_link = part.match(/\[\[([^\|\]]+)(?:\|([^\]]+))?\]\]/gim);
+  
+          let renderedPart: React.ReactNode = null;
+  
+          if (h3) {
+            renderedPart = <h3 key={index}>{h3[1].trim()}</h3>;
+          } else if (h2) {
+            renderedPart = <h2 key={index}>{h2[1].trim()}</h2>;
+          } else if (h1) {
+            renderedPart = <h1 key={index}>{h1[1].trim()}</h1>;
+          } else if (bold) {
+            renderedPart = <strong key={index}>{bold[1].trim()}</strong>;
+          } else if (quote) {
+            renderedPart = <blockquote key={index}>{quote[0].trim()}</blockquote>;
+          } else if (cursiv) {
+            renderedPart = <em key={index}>{cursiv[1].trim()}</em>;
+          } else if (list) {
+            currentListType = 'ul'; // Ненумерованный
+            listItems.push(<li key={index}>{list[0].substring(2).trim()}</li>);
+            return null; // Не рендерим ничего, т.к. уже добавили в listItems
+          } else if (ollist) {
+            currentListType = 'ol'; // Нумерованный
+            listItems.push(<li key={index}>{ollist[0].substring(2).trim()}</li>);
+            return null; // Не рендерим ничего, т.к. уже добавили в listItems
+          } else if (line) {
+            // Отображаем линию
+            if (listItems.length) {
+              const List = currentListType === 'ol' ? 'ol' : 'ul';
+              renderedPart = (
+                <>
+                  <List key={`list-${index}`}>{listItems}</List>
+                  {listItems.length = 0} {/* Сбрасываем items */}
+                  <hr />
+                </>
+              );
+            } else {
+              renderedPart = <hr key={index} />;
+            }
+          } else if (create_link) {
+            const partsWithLinks = part.split(create_link[0]); // Разделяем текст по ссылке
+            const fileName = create_link[0].replace(/\[\[([^\|\]]+)(?:\|([^\]]+))?\]\]/gim, "$1"); // Имя ссылки
+            const path = create_link[0].replace(/\[\[([^\|\]]+)(?:\|([^\]]+))?\]\]/gim, "$2"); // Путь ссылки
+  
+            // Добавляем часть до ссылки, саму ссылку и часть после
+            renderedPart = (
+              <span key={index}>
+                {partsWithLinks.map((part, partIndex) => (
+                  <>
+                    {part}
+                    {partIndex < partsWithLinks.length - 1 && (
+                      <button onClick={() => openFile(path)}>{fileName}</button>
+                    )}
+                  </>
+                ))}
+              </span>
+            );
+          } 
+          
+          // Если нет специального формата, отображаем текст как параграф
+          if (!renderedPart) {
+            renderedPart = <p key={index}>{part.trim()}</p>;
+          }
+  
+          return renderedPart; // Возвращаем отрендеренный элемент
+        })}
+        
+        {/* Рендерим список, если есть элементы */}
+        {listItems.length > 0 && (currentListType === 'ol' ? <ol>{listItems}</ol> : <ul>{listItems}</ul>)}
+      </div>
+    );
   };
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setContent(e.target.value);
-    setPreview(convertMarkdownToHtml(e.target.value));
+    setPreview(convertMarkdownToHtml(e.target.value as string));
   };
 
   const toggleMode = () => {
@@ -128,11 +165,11 @@ return (
   };
 
   const handleKeyDown = (event: { metaKey: any; ctrlKey: any; key: string; preventDefault: () => void; }) => {
-    if ((event.metaKey || event.ctrlKey) && event.key === 'e' ||  event.key === 'у' ) {
+    if ((event.metaKey || event.ctrlKey) && event.key === 'e' ||  (event.metaKey || event.ctrlKey) && event.key === 'у' ) {
       event.preventDefault();
       toggleMode();
     }
-    if ((event.metaKey || event.ctrlKey) && event.key === 'i' ||  event.key === 'ш' ) {
+    if ((event.metaKey || event.ctrlKey) && event.key === 'i' ||  (event.metaKey || event.ctrlKey) && event.key === 'ш' ) {
       event.preventDefault();
       toggleModal();
     }
@@ -148,7 +185,7 @@ return (
 
   //For Windows '\\' for unix '/'
   function getname(file: string): string{
-      return file.replace(/([^\/]+)\.md$/, "$1").split('\\').pop() || '';
+      return file.replace(/([^\/]+)\.md$/, "$1").split('/').pop() || '';
   }
 
   return (
@@ -173,14 +210,15 @@ return (
           onChange={handleInputChange}
         />
       ) : (
-        <div
-          dangerouslySetInnerHTML={{ __html: preview }}
-          style={{ width: "100%", height: "100%", padding: "10px" }}
+        
+          // dangerouslySetInnerHTML={{ __html: preview }}
+          // style={{ width: "100%", height: "100%", padding: "10px" }}
           
-        />
+          preview
+        
 
       )}
-      {Test()}
+      
     </div>
   );
 }
