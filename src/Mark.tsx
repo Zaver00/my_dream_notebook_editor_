@@ -17,16 +17,29 @@ function MarkdownEditor() {
   const toggleModal = () => {
       setIsModalOpen(!isModalOpen);
   };
+  
+  
+  
   const openFolder = async () => {
-    const folder = await open({ directory: true });
-    if (folder) {
-      setFolderPath(folder as string);
-      invoke('list_files_in_directory', { directory: folder })
+    if (folderPath) {
+      setFolderPath(folderPath as string);
+      invoke('list_files_in_directory', { directory: folderPath })
         .then((fileList) => setFiles(fileList as string[]))
         .catch((err) => console.error('Error listing files:', err));
     }
   };
 
+  const startFolder = async () => {
+    invoke('json_file')
+        .then((folder) => setFolderPath(folder as string))
+        .catch((err) => console.error('Error listing files:', err));
+    openFolder()
+  }
+  const folderChange = async () => {
+    const folder = await open({ directory: true });
+    setFolderPath(folder as string);
+    openFolder()
+  }
   const openFile = (filePath: string) => {
     setSelectedFile(filePath);
     invoke('read_file', { path: filePath })
@@ -43,7 +56,7 @@ function MarkdownEditor() {
         .catch((err) => console.error('Error saving file:', err));
     }
   };
-
+  // startFolder();
   // Function to convert markdown to HTML (simple example)
   const resds = (markdown: string) => {
     // Here you could use a more complex markdown to HTML converter
@@ -125,8 +138,10 @@ function MarkdownEditor() {
           } else if (create_link) {
             const partsWithLinks = part.split(create_link[0]); // Разделяем текст по ссылке
             const fileName = create_link[0].replace(/\[\[([^\|\]]+)(?:\|([^\]]+))?\]\]/gim, "$1"); // Имя ссылки
-            const path = create_link[0].replace(/\[\[([^\|\]]+)(?:\|([^\]]+))?\]\]/gim, "$2"); // Путь ссылки
-  
+            let path = create_link[0].replace(/\[\[([^\|\]]+)(?:\|([^\]]+))?\]\]/gim, "$2");
+            console.log(path)
+            if (path == ''){ path =  folderPath + '\\' + fileName + '.md'}
+            console.log(path)
             // Добавляем часть до ссылки, саму ссылку и часть после
             renderedPart = (
               <span key={index}>
@@ -185,7 +200,7 @@ function MarkdownEditor() {
 
   //For Windows '\\' for unix '/'
   function getname(file: string): string{
-      return file.replace(/([^\/]+)\.md$/, "$1").split('/').pop() || '';
+      return file.replace(/([^\/]+)\.md$/, "$1").split('\\').pop() || '';
   }
 
   return (
@@ -195,7 +210,7 @@ function MarkdownEditor() {
                     <div className="modal-content">
                         <span className="close" onClick={toggleModal}>&times;</span>
                         <button onClick={saveFile}>Save</button>
-                        <button onClick={openFolder}>Open Folder</button>
+                        <button onClick={folderChange}>Open Folder</button>
                         {files.map((file, idx) => (
                           <div key={idx} onClick={() => [openFile(file), toggleModal()]}>
                             {getname(file)}
@@ -210,13 +225,7 @@ function MarkdownEditor() {
           onChange={handleInputChange}
         />
       ) : (
-        
-          // dangerouslySetInnerHTML={{ __html: preview }}
-          // style={{ width: "100%", height: "100%", padding: "10px" }}
-          
           preview
-        
-
       )}
       
     </div>

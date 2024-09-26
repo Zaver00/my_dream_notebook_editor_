@@ -1,6 +1,8 @@
-use std::fs::{self, DirEntry};
+use std::fs::{self, DirEntry, File, OpenOptions};
 use std::path::PathBuf;
 use tauri::command;
+use serde::{Deserialize, Serialize};
+use std::io::{self, Read};
 
 #[command]
 pub fn list_files_in_directory(directory: String) -> Result<Vec<PathBuf>, String> {
@@ -35,7 +37,17 @@ pub fn save_metadata(path: String, tags: Vec<String>) -> Result<(), String> {
     fs::write(meta_path, metadata).map_err(|e| e.to_string())
 }
 
+#[derive(Serialize, Deserialize)]
+struct FileJsonOpen{
+    open_folder: String
+
+}
 #[command]
-pub fn link_to_file(){
-    
+pub fn json_file() -> String {
+    // let mut open = OpenOptions::new().read(true).open(r"D:\Project\my_dream_notebook_editor_\test.sdb").unwrap();
+    // let mut contents = String::new();
+    // open.read_to_string(&mut contents).unwrap();
+    // let file: FileJsonOpen = serde_json::from_str(&contents).unwrap();
+    // file.open_folder.to_string()
+    r"C:\Users\Jormungand\Documents\vault-cornectone.back".to_string()
 }
